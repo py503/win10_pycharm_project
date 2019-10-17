@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MyBlog</title>
+</head>
+<body>
+    <div>
+        <ul>
+            <h4>所有文章</h4>
+                {% for article in allarticle %}
+                    <li>
+                        标题: {{ article.title }}<br />
+                        栏目: {{ article.category }}<br />
+                        作者: {{ article.user }}<br />
+                        时间: {{ article.created_time }}<br />
+
+                    </li>
+                {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

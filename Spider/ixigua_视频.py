@@ -1,0 +1,114 @@
+import requests
+from my_user_agent import get_user_agent
+from selenium import webdriver
+import time
+from lxml import etree
+import json
+
+# 西瓜美食频道
+url = "https://www.ixigua.com/channel/meishi/"
+headers = get_user_agent()
+# file_name = input("请输入要保存的文件名：")
+
+
+def get_source(url):
+    chromedriver = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
+    browser = webdriver.Chrome(chromedriver)
+    browser.get(url)
+    time.sleep(2)
+    for i in range(3):
+        # 鼠标拉动滚动条
+        browser.execute_script(
+            "window.scrollTo(0, document.body.scrollHeight); var lenOfPage=document.body.scrollHeight; return lenOfPage")
+        time.sleep(1)
+
+    source = browser.page_source
+    browser.quit()
+    return source
+
+
+def get_video_source(url):
+    chromedriver = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
+    browser = webdriver.Chrome(chromedriver)
+    browser.get(url)
+    time.sleep(5)
+    browser.find_element_by_class_name("xgplayer-start").click()
+    time.sleep(1)
+    # for i in range(3):
+    #     # 鼠标拉动滚动条
+    #     browser.execute_script(
+    #         "window.scrollTo(0, document.body.scrollHeight); var lenOfPage=document.body.scrollHeight; return lenOfPage")
+    #     time.sleep(1)
+
+    source = browser.page_source
+    browser.quit()
+    return source
+
+def get_info():
+    html = get_source(url)
+    # with open('text.html', "r",encoding="utf-8") as f:
+    #     html = f.read()
+    # print(html)
+    e = etree.HTML(html)
+    video_list = e.xpath('//div[@class="channel__module channel__module-more"]//div[@class="CardCommon__desc"]')
+    # video_list = e.xpath('//div[@class="channel__module channel__module-more"]//div[@class="CardCommon__desc"]/a/@href')
+    # print(video_list)
+    # v_infos = []
+    for i in video_list:
+        v_info = {}
+        v_info["title"] = i.xpath('./a/@title')[0]
+        v_info["url"] = "https://www.ixigua.com{}".format(i.xpath('./a/@href')[0])
+        v_info["play"] = i.xpath('./p/text()')[0].split("播放")[0]
+        v_info["comment"] = i.xpath('./p/text()')[0].split('·')[-1].split("评论")[0].replace("\xa0","")
+        # 保存数据
+
+        file_name = input("请输入要保存的文件名：")
+        save_info(file_name, v_info)
+        # v_infos.append(v_info)
+        # 下载视频
+        get_video(v_info)
+
+
+def save_info(file_name, video_info):
+    # a+ 为同一文件在文本最后添加
+    with open(file_name, "a+",encoding="utf-8") as f:
+        f.write(json.dumps(video_info, ensure_ascii=False) + "\n")
+    print("下载完成")
+
+
+def get_video(v_info):
+    '''
+    拿到视频能下载的url地址，并下载
+    :param v_info: 视频信息 ：字典类型
+    :return:
+    '''
+    url = v_info["url"]
+    html = get_video_source(url)
+    # print(html)
+    e = etree.HTML(html)
+    video_url = e.xpath('//div[@class="playerSection"]//video/@src')
+    if len(video_url) > 0:
+        video_url = video_url[0]
+        print(video_url)
+        # 保存视频
+        # 使用requests发出请求，下载
+        if "blob:" not in video_url:
+            response = requests.get("https:" + video_url, stream= True, headers=headers)
+            # 写入收到的视频数据
+            file_name = v_info["title"]
+            with open(file_name, 'ab') as f:
+                f.write(response.content)
+                # 刷新缓冲区
+                f.flush()
+                print("下载成功")
+    else:
+        print("找不到该视频。。。。")
+
+
+def main():
+    get_info()
+    # get_video('https://www.ixigua.com/i6741656447316132359/')
+    # get_video('https://www.ixigua.com/i6670639371814699533/')
+
+if __name__ == '__main__':
+    main()
