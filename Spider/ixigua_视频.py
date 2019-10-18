@@ -8,8 +8,9 @@ import json
 # 西瓜美食频道
 url = "https://www.ixigua.com/channel/meishi/"
 headers = get_user_agent()
-# file_name = input("请输入要保存的文件名：")
-
+file_name = input("请输入要保存的文件名：")
+path = r"C:\\Users\\Administrator\\Desktop\\youtube\\"
+print(path)
 
 def get_source(url):
     chromedriver = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
@@ -31,7 +32,7 @@ def get_video_source(url):
     chromedriver = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
     browser = webdriver.Chrome(chromedriver)
     browser.get(url)
-    time.sleep(5)
+    time.sleep(3)
     browser.find_element_by_class_name("xgplayer-start").click()
     time.sleep(1)
     # for i in range(3):
@@ -43,6 +44,7 @@ def get_video_source(url):
     source = browser.page_source
     browser.quit()
     return source
+
 
 def get_info():
     html = get_source(url)
@@ -59,10 +61,10 @@ def get_info():
         v_info["title"] = i.xpath('./a/@title')[0]
         v_info["url"] = "https://www.ixigua.com{}".format(i.xpath('./a/@href')[0])
         v_info["play"] = i.xpath('./p/text()')[0].split("播放")[0]
-        v_info["comment"] = i.xpath('./p/text()')[0].split('·')[-1].split("评论")[0].replace("\xa0","")
+        v_info["comment"] = i.xpath('./p/text()')[0].split('·')[-1].split("评论")[0].replace("\xa0", "")
         # 保存数据
 
-        file_name = input("请输入要保存的文件名：")
+        # file_name = input("请输入要保存的文件名：")
         save_info(file_name, v_info)
         # v_infos.append(v_info)
         # 下载视频
@@ -71,7 +73,7 @@ def get_info():
 
 def save_info(file_name, video_info):
     # a+ 为同一文件在文本最后添加
-    with open(file_name, "a+",encoding="utf-8") as f:
+    with open(file_name, "a+", encoding="utf-8") as f:
         f.write(json.dumps(video_info, ensure_ascii=False) + "\n")
     print("下载完成")
 
@@ -93,22 +95,24 @@ def get_video(v_info):
         # 保存视频
         # 使用requests发出请求，下载
         if "blob:" not in video_url:
-            response = requests.get("https:" + video_url, stream= True, headers=headers)
+            response = requests.get("http:" + video_url, stream=True, headers=headers)
             # 写入收到的视频数据
-            file_name = v_info["title"]
-            with open(file_name, 'ab') as f:
+            file_name = "{}.mp4".format(v_info["title"])
+            with open(path  + file_name, 'ab') as f:
                 f.write(response.content)
                 # 刷新缓冲区
                 f.flush()
-                print("下载成功")
+                print("{} : 下载成功".format(v_info["title"]))
+        else:
+            print("这个方法找不到该视频: {}".format(v_info["title"]))
     else:
-        print("找不到该视频。。。。")
-
+        print("没有可下载的视频.....")
 
 def main():
     get_info()
     # get_video('https://www.ixigua.com/i6741656447316132359/')
     # get_video('https://www.ixigua.com/i6670639371814699533/')
+
 
 if __name__ == '__main__':
     main()
