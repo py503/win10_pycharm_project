@@ -43,7 +43,7 @@ class ParseInfo(Thread):
     def run(self):
         num = 1
         while self.html_queue.empty() == False:
-            Selector = etree.HTML(html_queue.get())
+            Selector = etree.HTML(self.html_queue.get())
             span_text = Selector.xpath('//div[@class="content"]/span[1]')
             print(span_text)
 

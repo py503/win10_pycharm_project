@@ -12,14 +12,31 @@ import random
 # 有耗时操作时需要
 monkey.patch_all()  # 将程序中用到的耗时操作的代码,换为genvent中自已实现的模块
 # 西瓜美食频道
+url = "https://www.ixigua.com/channel/meishi/"
 headers = get_user_agent()
 file_name = input("请输入要保存的文件名：")
 path = r"C:\\Users\\Administrator\\Desktop\\youtube\\"
 print(path)
 
 
-def get_source():
-    browser.implicitly_wait(10)
+chromedriver = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
+# 不加截图片,固定格式
+options = webdriver.ChromeOptions()
+prefs = {
+    'profile.default_content_setting_values': {
+        'images': 2,
+    }
+}
+options.add_experimental_option('prefs', prefs)
+# 创建一个不加载图片的Chrom对象,传入参数
+browser = webdriver.Chrome(executable_path=chromedriver, chrome_options=options)
+
+
+def get_source(url):
+    # chromedriver = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
+    # browser = webdriver.Chrome(chromedriver)
+    browser.get(url)
+    time.sleep(2)
     for i in range(3):
         # 鼠标拉动滚动条
         browser.execute_script(
@@ -27,18 +44,15 @@ def get_source():
         time.sleep(1)
 
     source = browser.page_source
+    browser.close()
     return source
 
 
 def get_video_source(url):
-    # chromedriver = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
-    # 创建新的浏览器
-    browser = webdriver.Chrome(chromedriver)
     browser.get(url)
-    # browser.implicitly_wait(10)
     time.sleep(3)
     browser.find_element_by_class_name("xgplayer-start").click()
-    # time.sleep(1)
+    time.sleep(2)
     # for i in range(3):
     #     # 鼠标拉动滚动条
     #     browser.execute_script(
@@ -46,7 +60,7 @@ def get_video_source(url):
     #     time.sleep(1)
 
     source = browser.page_source
-    browser.quit()
+    browser.close()
     return source
 
 
@@ -55,7 +69,7 @@ def get_info(info_queue):
     得到所有视频数据
     :return: 所有视频数据列表
     """
-    html = get_source()
+    html = get_source(url)
     # with open('text.html', "r",encoding="utf-8") as f:
     #     html = f.read()
     # print(html)
@@ -112,7 +126,6 @@ def get_video(v_info):
             response = requests.get("http:" + video_url, stream=True, headers=headers)
             # 写入收到的视频数据
             file_name = "{}.mp4".format(v_info["title"])
-            print(path +file_name)
             with open(path + file_name, 'ab') as f:
                 f.write(response.content)
                 # 刷新缓冲区
@@ -125,19 +138,6 @@ def get_video(v_info):
 
 
 if __name__ == '__main__':
-    chromedriver = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
-    browser = webdriver.Chrome(chromedriver)
-    url = "https://www.ixigua.com/channel/meishi/"
-    """
-    # 没置无界面
-    from selenium.webdriver.chrome.options import Options
-
-    options = Options()
-    options.add_argument('--headless')
-    options.add_argument('--disable-gpu')
-    browser = webdriver.Chrome(options=options)   # 设置无界面爬虫
-    """
-    browser.get(url)
     # 创建队列info_queue  存放字典数据
     info_queue = Queue()
     get_info(info_queue)
@@ -145,7 +145,6 @@ if __name__ == '__main__':
     print(video_info)
     # 多任务下载
 
-    num = 1
     while info_queue.empty() == False:
         gevent.joinall([
             gevent.spawn(get_video, info_queue.get()),
@@ -153,7 +152,6 @@ if __name__ == '__main__':
             gevent.spawn(get_video, info_queue.get()),
             gevent.spawn(get_video, info_queue.get())
         ])
-        num += 1
-        print(num)
     print("所有的视频下载完成!!!!")
-    browser.quit()
+    # 退出浏览器
+    # browser.quit()
